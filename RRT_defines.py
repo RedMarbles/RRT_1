@@ -16,9 +16,9 @@ class State:
 		self.__angle_check()
 
 	def __angle_check(self):
-		"""Make sure angle is between 0 and 2*pi"""
-		while (self.theta>2*np.pi): self.theta -= np.pi
-		while (self.theta<0): self.theta += np.pi
+		"""Make sure angle is between -pi and +pi"""
+		while (self.theta > +np.pi): self.theta -= 2*np.pi
+		while (self.theta < -np.pi): self.theta += 2*np.pi
 
 	def __repr__(self):
 		return "[x:%f, y:%f, theta:%f]" % (self.x, self.y, self.theta)
@@ -28,6 +28,10 @@ class State:
 
 	def __sub__(self, other):
 		return State(self.x-other.x, self.y-other.y, self.theta-other.theta)
+
+	def rho(self):
+		"""Calculate the eucledian distance between this (x,y) point and the origin"""
+		return np.sqrt(self.x*self.x + self.y*self.y)
 
 class Control:
 	"""Represents the control vector U of the system"""
@@ -67,17 +71,43 @@ class Plant:
 		return State(x_new, y_new, theta_new)
 
 	def distance(self, X1, X2):
-		"""Calculate distance between states"""
+		"""Return distance between two states"""
+		return self.distance_simple(X1, X2)
+
+	def distance_simple(self, X1, X2):
+		"""Calculate simple eucledian distance"""
 		dX = X2-X1
-		d = np.sqrt(dX.x*dX.x + dX.y*dX.y) + 2*self.min_turn_radius*np.abs(dX.theta)
+		d = np.sqrt(dX.x*dX.x + dX.y*dX.y)
+		return d
+
+	def distance_ver1(self, X1, X2):
+		"""
+		Calculate distance between states using formula:
+		distance = \sqrt{(x_2-x_1)^2 + (y_2-y_1)^2} + 2*r_{min}*\phi \\
+		\phi = \mathrm{atan2} \left( \frac{y_2-y_1}{x_2-x_1} \right)
+		"""
+		dX = X2-X1
+		phi = np.arctan2(dX.y,dX.x)
+		d = np.sqrt(dX.x*dX.x + dX.y*dX.y) + 2*self.min_turn_radius*np.abs(phi)
+		return d
 
 	def extend(self, X, X_rand):
 		"""Calculates next step from X to X_rand"""
+		return self.extend_simple(X, X_rand)
+
+	def extend_simple(self, X, X_rand):
+		"""The extend function, for a simple holonomic system"""
 		dX = X_rand - X
-		dist = np.sqrt(dX.x*dX.x + dX.y*dX.y)
-		dx = dX.x / dist * self.dx_max
-		dy = dX.y / dist * self.dx_max
-		#TODO
+		dist = dX.rho()
+
+		# If distance is less than unit distance, return directly
+		if (dist<=dx_max) : return State(X_rand.x, X_rand.y)
+
+		#Normalizing the difference vector to get unit vector
+		#Also multiplying by dx_max to get RRT unit jump
+		x_new = dX.x / dist * dx_max
+		y_new = dX.y / dist * dx_max
+		return State(x_new, y_new)
 
 
 class Node:

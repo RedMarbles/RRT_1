@@ -26,6 +26,10 @@ class Map:
 		""" Adds a rectangular obstacle to the map """
 		#TODO
 
+	def inputObstacles(self, ...):
+		""" Takes input from the user to draw obstacles """
+		#TODO
+
 	def drawTreeMap(self, states_tree, draw_params=None):
 		""" Accepts tree of states, and outputs the map with obstacles and the accepted states 
 		    states_tree : Tree object 

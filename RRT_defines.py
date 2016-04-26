@@ -8,11 +8,12 @@ from matplotlib import pyplot as plt
 class State:
 	"""Represents the state X of the system"""
 
-	def __init__(self, x=0.0, y=0.0, theta=0.0):
+	def __init__(self, x=0.0, y=0.0, theta=0.0, time=0.0):
 		"""Constructor."""
 		self.x = x
 		self.y = y
 		self.theta = theta
+		self.time = time
 		self.__angle_check()
 
 	def __angle_check(self):

@@ -9,20 +9,26 @@ from matplotlib import pyplot as plt
 class Map:
 	"""Represents the full state and interface of the map"""
 
-	map_limits = {	'xmin':-5, 
-					'xmax':+5, 
-					'ymin':-5, 
-					'ymax':+5  }	# Limits of the map
 	default_params = { 	'bot_length':0.5, 
 						'bot_color':'b',
 						'path_color':'b' }
 
-	def __init__(self):
+	def __init__(self, mapfile="Maps/Map1.bmp"):
 		""" Map class Constructor """
 		#TODO:
 		# Choose to update default values for the following:
 		# * map_limits
-		self.map_grid = self.loadBitmap("Maps/Map1.bmp")
+		self.map_grid = self.loadBitmap(mapfile)
+		self.map_width = len(self.map_grid[0])
+		self.map_height = len(self.map_grid)
+		self.res_x = 0.1 # [m] - Distance on ground that each pixel represents
+		self.res_y = 0.1 # [m] - Distance on ground that each pixel represents
+		self.map_limits = {}
+		self.map_limits['xmin'] = 0
+		self.map_limits['xmax'] = self.map_width * self.res_x
+		self.map_limits['ymin'] = 0
+		self.map_limits['ymax'] = self.map_height * self.res_y
+		self.drawMap()
 
 	def addRectObstacle(self, etc):
 		""" Adds a rectangular obstacle to the map """
@@ -56,7 +62,7 @@ class Map:
 
 		# Verify that it is a bitmap
 		if not( data[0]==66 and data[1]==77 ):
-			print("File is not a bitmap")
+			print("ERROR: File is not a bitmap")
 			return 0
 		
 		def little_endian(data, location, size):
@@ -70,7 +76,7 @@ class Map:
 		start_offset = little_endian(data, 10, 4)
 		header_size = little_endian(data, 14, 4)
 		if (header_size<40):
-			print("Unknown format")
+			print("ERROR: Bitmap unknown format")
 			return 0
 		width_pixels = little_endian(data, 18, 4)
 		height_pixels = little_endian(data, 22, 4)
@@ -96,7 +102,26 @@ class Map:
 		print("Vertical resolution : %d" % resolution_vertical)
 		print("Number of colors in the color palette : %d" % num_color_palette)
 
-		#TODO : extract bitmap data and insert into map structure
+		# Verify file is in desired format
+		if not((color_planes==1) and (bits_per_pixel==24) and (compression_method==0) and ((bitmap_size-start_offset)%height_pixels==0) ):
+			print("ERROR: Bitmap unusable format")
+			return 0
+
+		# Extract data (working with local variable)
+		rowstep = (bitmap_size - start_offset) // height_pixels # Number of bytes between successive rows
+		numchannels = 3
+		map_mat = []
+		for row in range(height_pixels):
+			row_list = []
+			for col in range(width_pixels):
+				row_list.append( data[start_offset + row*rowstep + col*numchannels]//255 )
+			map_mat.append(row_list)
+		for row in range(len(map_mat)):
+			print(map_mat[row])
+
+		return map_mat
+
+
 
 	def drawStatesMap(self, states_list, draw_params=None):
 		""" Draw only a specified list of states in order, to mark a specific path """
@@ -104,4 +129,16 @@ class Map:
 
 	def drawMap(self, draw_params=None):
 		""" Draw only the static map, and nothing else """
-		pass #TODO : complete this function
+		fig1 = plt.figure(1)
+
+		for row in range(self.map_height):
+			for col in range(self.map_width):
+				pix = self.map_grid[row][col]
+				color = 'white' if (pix==1) else 'black'
+				x_list = [ self.res_x*col, self.res_x*(col+1), self.res_x*(col+1), self.res_x*col ]
+				y_list = [ self.res_y*row, self.res_y*row, self.res_y*(row+1), self.res_y*(row+1) ]
+				plt.fill(x_list, y_list, color=color)
+		
+		plt.axis([ self.map_limits['xmin'], self.map_limits['xmax'], self.map_limits['ymin'], self.map_limits['ymax'] ])
+		plt.show()
+		return

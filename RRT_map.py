@@ -24,11 +24,11 @@ class Map:
 		# * map_limits
 		self.map_grid = self.loadBitmap("Maps/Map1.bmp")
 
-	def addRectObstacle(self, ...):
+	def addRectObstacle(self, etc):
 		""" Adds a rectangular obstacle to the map """
 		pass #TODO
 
-	def inputObstacles(self, ...):
+	def inputObstacles(self, etc):
 		""" Takes input from the user to draw obstacles """
 		pass #TODO
 
@@ -46,6 +46,7 @@ class Map:
 
 	def loadBitmap(self, filename="Maps/Map1.bmp"):
 		""" Loads a RGB bitmap to use as a map. Only the first channel is looked at.
+			Data format is taken from https://en.wikipedia.org/wiki/BMP_file_format
 		"""
 		# Open file and read all data
 		with open(filename,"rb") as file:
@@ -54,7 +55,7 @@ class Map:
 		# Parse bitmap header
 
 		# Verify that it is a bitmap
-		if not( data[0]==66 AND data[1]==77 ):
+		if not( data[0]==66 and data[1]==77 ):
 			print("File is not a bitmap")
 			return 0
 		
@@ -72,10 +73,35 @@ class Map:
 			print("Unknown format")
 			return 0
 		width_pixels = little_endian(data, 18, 4)
-		#TODO : Complete with information from https://en.wikipedia.org/wiki/BMP_file_format
+		height_pixels = little_endian(data, 22, 4)
+		color_planes = little_endian(data, 26, 2) # Has to be = 1
+		bits_per_pixel = little_endian(data, 28, 2) # For now, only going to use 24 (8 bits per channel)
+		compression_method = little_endian(data, 30, 4) # Only want to work with value = 0 (BI_RGB uncompressed data)
+		image_size = little_endian(data, 34, 4) # Size of the raw bitmap data
+		resolution_horizontal = little_endian(data, 38, 4) # pixels per meter
+		resolution_vertical = little_endian(data, 42, 4) # pixels per meter
+		num_color_palette = little_endian(data, 46, 4) # Number of colors in the color palette, from 0 to 2^n
+
+		# Verify extracted header
+		print("Bitmap Size : %d" % bitmap_size)
+		print("Data start offset : %d" % start_offset)
+		print("Size of the main header : %d" % header_size)
+		print("Bitmap width in pixels : %d" % width_pixels)
+		print("Bitmap height in pixels : %d" % height_pixels)
+		print("Number of color planes : %d" % color_planes)
+		print("Color depth (bits per pixel) : %d" % bits_per_pixel)
+		print("Compression method : %d" % compression_method)
+		print("Image Size : %d" % image_size)
+		print("Horizontal resolution : %d" % resolution_horizontal)
+		print("Vertical resolution : %d" % resolution_vertical)
+		print("Number of colors in the color palette : %d" % num_color_palette)
+
+		#TODO : extract bitmap data and insert into map structure
 
 	def drawStatesMap(self, states_list, draw_params=None):
 		""" Draw only a specified list of states in order, to mark a specific path """
 		pass #TODO : complete this function
 
-	def 
+	def drawMap(self, draw_params=None):
+		""" Draw only the static map, and nothing else """
+		pass #TODO : complete this function

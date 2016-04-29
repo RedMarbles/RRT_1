@@ -1,5 +1,5 @@
 """
-Defines the State and Control classes, to represent the X and U vectors
+Defines the State and ControlInput classes, to represent the X and U vectors
 """
 
 import numpy as np
@@ -34,8 +34,9 @@ class State:
 		"""Calculate the eucledian distance between this (x,y) point and the origin"""
 		return np.sqrt(self.x*self.x + self.y*self.y)
 
-class Control:
-	"""Represents the control vector U of the system"""
+
+class ControlInput:
+	"""Represents the input control vector U of the system"""
 
 	def __init__(self, v=0, omega=0):
 		"""Constructor"""
@@ -45,11 +46,21 @@ class Control:
 	def __repr__(self):
 		return "[v:%f, omega:%f]" % (self.v, self.omega)
 
+	def saturate(self, v_max=5, v_min=-5, omega_max=5, omega_min=-5):
+		""" Return a saturated control input """
+		v = self.v
+		omega = self.omega
+		v = np.min( [v, v_max] )
+		v = np.max( [v, v_min] )
+		omega = np.min( [omega, omega_max] )
+		omega = np.max( [omega, omega_min] )
+		return ControlInput(v, omega)
+
 
 class Plant:
-	"""Represents the physical system itself"""
+	"""Represents the physical system itself, the simulation of the system"""
 
-	def __init__(self, v_lim=5, omega_lim=0.2):
+	def __init__(self, v_lim=5, omega_lim=5):
 		"""Constructor"""
 		self.v_lim = v_lim # [m/s]
 		self.omega_lim = omega_lim # [radians/sec]
@@ -58,30 +69,28 @@ class Plant:
 		self.dx_max = self.v_lim * self.dt # maximum movement
 		self.dth_max = self.omega_lim * self.dt # maximum rotation
 
-	def update(self, X=State(), U=control()):
+	def update(self, X=State(), U=ControlInput()):
 		"""Apply control on the state"""
+		U = U.saturate(self.v_lim, -self.v_lim, self.omega_lim, -self.omega_lim)
 		(v,w) = (U.v,U.w)
-		v = np.min( [v, self.v_lim] )
-		v = np.max( [v,-self.v_lim] )
-		w = np.min( [w, self.omega_lim] )
-		w = np.max( [w,-self.omega_lim] )
+
 		d_theta = w * self.dt
-		x_new = X.x + v*np.cos(X.theta + d_theta/2)
-		y_new = X.y + v*np.sin(X.theta + d_theta/2)
+		x_new = X.x + v*np.cos(X.theta + d_theta/2)*self.dt
+		y_new = X.y + v*np.sin(X.theta + d_theta/2)*self.dt
 		theta_new = X.theta + d_theta
-		return State(x_new, y_new, theta_new)
+		return State(x_new, y_new, theta_new, X.time+self.dt)
 
 	def distance(self, X1, X2):
 		"""Return distance between two states"""
-		return self.distance_simple(X1, X2)
+		return self.distance_euclidean(X1, X2)
 
-	def distance_simple(self, X1, X2):
+	def distance_euclidean(self, X1, X2):
 		"""Calculate simple eucledian distance"""
 		dX = X2-X1
 		d = np.sqrt(dX.x*dX.x + dX.y*dX.y)
 		return d
 
-	def distance_ver1(self, X1, X2):
+	def distance_geometric_sans_parking(self, X1, X2):
 		"""
 		Calculate distance between states using formula:
 		distance = \sqrt{(x_2-x_1)^2 + (y_2-y_1)^2} + 2*r_{min}*\phi \\
@@ -89,7 +98,7 @@ class Plant:
 		"""
 		dX = X2-X1
 		phi = np.arctan2(dX.y,dX.x)
-		d = np.sqrt(dX.x*dX.x + dX.y*dX.y) + 2*self.min_turn_radius*np.abs(phi)
+		d = np.sqrt(dX.x*dX.x + dX.y*dX.y) + 2*self.min_turn_radius*np.abs(phi - X1.theta)
 		return d
 
 	def extend(self, X, X_rand):

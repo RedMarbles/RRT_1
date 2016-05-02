@@ -28,7 +28,7 @@ class Map:
 		self.map_limits['xmax'] = self.map_width * self.res_x
 		self.map_limits['ymin'] = 0
 		self.map_limits['ymax'] = self.map_height * self.res_y
-		self.drawMap()
+		#self.drawMap()
 
 	def addRectObstacle(self, etc):
 		""" Adds a rectangular obstacle to the map """
@@ -37,6 +37,17 @@ class Map:
 	def inputObstacles(self, etc):
 		""" Takes input from the user to draw obstacles """
 		pass #TODO
+
+	def checkCollision(self, x, y):
+		""" Checks if there is an obstacle at the specified location """
+		#Convert real location to matrix location
+		row = int( np.round(y/self.res_y) )
+		col = int( np.round(x/self.res_x) )
+		if (self.map_grid[row][col] == 0):
+			return True
+		else:
+			return False
+
 
 	def drawTreeMap(self, states_tree, draw_params=None):
 		""" Accepts tree of states, and outputs the map with obstacles and the accepted states 
@@ -140,5 +151,5 @@ class Map:
 				plt.fill(x_list, y_list, color=color)
 		
 		plt.axis([ self.map_limits['xmin'], self.map_limits['xmax'], self.map_limits['ymin'], self.map_limits['ymax'] ])
-		plt.show()
-		return
+		#plt.show()
+		return fig1

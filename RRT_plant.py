@@ -5,7 +5,6 @@ Defines the classes required for the basic simulation.
 	control for a (2,0) differential drive robot, but later needs to be changed to the (v,beta)
 	control for a (1,1) steerable robot.
 * Model - Holds properties of the robot, such as maximum velocities and turning radii
-* Plant - Runs the simulation, such as updating robot positions
 * Node - Forms the basic nodes of the RRT tree, and contains information about the parent
 	and child nodes, as well as state and control to reach state
 * Tree - A tree structure for the RRT
@@ -87,27 +86,6 @@ class ControlInput:
 
 
 
-class Plant:
-	"""Represents the physical system itself, the simulation of the system"""
-
-	def __init__(self):
-		"""Constructor"""
-		self.tree = Tree()
-
-
-	def update(self, X=State(), U=ControlInput()):
-		"""Apply control on the state"""
-		U = U.saturate(self.v_lim, -self.v_lim, self.omega_lim, -self.omega_lim)
-		(v,w) = (U.v,U.w)
-
-		d_theta = w * self.dt
-		x_new = X.x + v*np.cos(X.theta + d_theta/2)*self.dt
-		y_new = X.y + v*np.sin(X.theta + d_theta/2)*self.dt
-		theta_new = X.theta + d_theta
-		return State(x_new, y_new, theta_new, X.time+self.dt)
-
-
-
 class Node:
 	"""Represents one node on the tree"""
 
@@ -149,12 +127,18 @@ class Tree:
 		else print("Error: not a node type")
 
 	def append(self, state, control, parent):
+		""" Adds a new node to the tree.
+		    Returns the index of the new node
+		"""
 		if (isinstance(state, State) and isinstance(control,ControlInput) and isinstance(parent,int)):
 			#Add address of child in the parent node
 			self.data[parent].children.append( len(self.data) )
 			#Create node with state and control and add it 
 			self.data.append( Node(state=state, control=control, parent=parent)  )
-		else printf("Error: Invalid data types")
+			return (len(self.data)-1)
+		else:
+			printf("Error: Invalid data types")
+			return -1
 
 	def __len__(self):
 		return len(self.data)

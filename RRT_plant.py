@@ -18,7 +18,7 @@ model = { 'v_min': -5, # [m/s]
 		  'omega_min': -5, # [radians/s]
 		  'omega_max': +5, # [radians/s]
 		  'min_turn_radius': 3, # [meters]
-		  'dt': 0.3 #[seconds]
+		  'dt': 0.1 #[seconds]
 		  }
 model['dx_max']  = model['v_max'] * model['dt'] # maximum positive movement in single timestep
 model['dth_max'] = model['omega_max'] * model['dt'] # maximum positive rotation in a single timestep
@@ -53,9 +53,9 @@ class State:
 
 	def __eq__(self, other):
 		if ( (self.x==other.x) and (self.y==other.y) and (self.theta==other.theta) ):
-			return true
+			return True
 		else:
-			return false
+			return False
 
 	def rho(self):
 		"""Calculate the eucledian distance between this (x,y) point and the origin"""
@@ -109,10 +109,10 @@ class Tree:
 			#If a node is given, set it as the new root
 			value.parent = -1
 			self.data.append(value)
-		else if(isinstance(value, Tree)):
+		elif(isinstance(value, Tree)):
 			#If a tree is given, copy it into the blank data structure
 			self.data.extend(Tree.data)
-		else if(isinstance(value, State)):
+		elif(isinstance(value, State)):
 			#If a state is given, create a new node and set it as the root
 			self.data.append( Node(state=value, parent=-1, control=ControlInput()) )
 
@@ -124,7 +124,8 @@ class Tree:
 		#Note that the key here should be an integer
 		if (isinstance(value, Node)):
 			self.data[key] = value
-		else print("Error: not a node type")
+		else:
+			print("Error: not a node type")
 
 	def append(self, state, control, parent):
 		""" Adds a new node to the tree.

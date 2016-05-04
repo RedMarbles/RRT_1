@@ -61,7 +61,7 @@ class Map:
 		plt.figure(figure_number)
 		
 		# Go backwards through the tree
-		for i in range( len(states_tree)-1, -1, -1 ) :
+		for i in range( len(states_tree)-1, 0, -1 ) :
 			start = states_tree[i].state
 			end = states_tree[ states_tree[i].parent ].state
 			plt.plot([start.x, end.x],[start.y, end.y],color=params['path_color'])
@@ -137,8 +137,8 @@ class Map:
 			for col in range(width_pixels):
 				row_list.append( data[start_offset + row*rowstep + col*numchannels]//255 )
 			map_mat.append(row_list)
-		for row in range(len(map_mat)):
-			print(map_mat[row])
+		#for row in range(len(map_mat)):
+		#	print(map_mat[row])
 
 		return map_mat
 

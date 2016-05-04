@@ -135,9 +135,9 @@ class Tree:
 		self.data = []
 		if(isinstance(value, Node)): 
 			self.data.append(value)
-		else if(isinstance(value, Tree)): 
+		elif(isinstance(value, Tree)): 
 			self.data.extend(Tree.data)
-		else if(isinstance(value, State)):
+		elif(isinstance(value, State)):
 			self.data.append( Node(state=value, root=-1) )
 
 	def __getitem__(self, key):

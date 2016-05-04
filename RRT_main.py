@@ -1,6 +1,6 @@
 
 from RRT_plant import *
-from RRT_controller import *
+from RRT_controller import Planner
 
 if __name__ == "__main__":
 	"""Main function"""

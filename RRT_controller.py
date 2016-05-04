@@ -11,7 +11,6 @@ from matplotlib import pyplot as plt
 from RRT_plant import model
 from RRT_plant import State
 from RRT_plant import ControlInput
-from RRT_plant import Plant
 from RRT_plant import Node
 from RRT_plant import Tree
 
@@ -27,7 +26,6 @@ class Planner:
 		   final_state : Either the goal state, or else a list of goal states
 		"""
 		self.model = model  # The model parameters
-		self.plant = Plant()  # The simulation environment
 		self.tree = Tree(initial_state)  # Initialize the tree
 		self.goals = [final_state]       # The goal to aim for
 		self.map = Map(mapfile)   # The obstacle map of the environment
@@ -41,10 +39,10 @@ class Planner:
 		if(self.current_target == self.goals[0]):
 			collision = True
 			while(collision):
-				new_x = np.random.uniform(map.map_limits['xmin'], map.map_limits['xmax'])
-				new_y = np.random.uniform(map.map_limits['ymin'], map.map_limits['ymax'])
+				new_x = np.random.uniform(self.map.map_limits['xmin'], self.map.map_limits['xmax'])
+				new_y = np.random.uniform(self.map.map_limits['ymin'], self.map.map_limits['ymax'])
 				new_theta = np.random.uniform( -np.pi, +np.pi )
-				collision = map.checkCollision(new_x, new_y)
+				collision = self.map.checkCollision(new_x, new_y)
 
 			self.current_target = State(new_x, new_y, new_theta)
 		else:
@@ -69,7 +67,7 @@ class Planner:
 		""" Grow the tree in the direction of the target state
 			Returns whether the final goal state has been reached
 		"""
-		if (goal_state==None):
+		if (goal_state is None):
 			goal_state = self.current_target
 		
 		# Find closest node in tree
@@ -88,7 +86,8 @@ class Planner:
 		"""
 		current_state = self.tree[old_node_address].state
 
-		dX = self.distance(goal_state, current_state)
+		dX = goal_state - current_state
+		dist = self.distance(goal_state, current_state)
 
 		# If distance is less than unit distance, return directly
 		if (dist<=self.model['dx_max']) :
@@ -96,15 +95,15 @@ class Planner:
 		else:
 			#Normalizing the difference vector to get unit vector
 			#Also multiplying by dx_max to get RRT unit jump
-			x_new = dX.x / dist * dx_max + current_state.x
-			y_new = dX.y / dist * dx_max + current_state.y
+			x_new = dX.x / dist * self.model['dx_max'] + current_state.x
+			y_new = dX.y / dist * self.model['dx_max'] + current_state.y
 			new_state = State(x_new, y_new)
 
 			# Abort current iteration if we extend onto an obstacle
 			if(self.map.checkCollision(x_new, y_new)==True):
 				return False
-		self.tree.append(state=new_state, parent=old_node_address)
-		if(self.distance(goal_state, self.goals[0]) < 0.1) :
+		self.tree.append(state=new_state, parent=old_node_address, control=ControlInput())
+		if(self.distance(new_state, self.goals[0]) < 0.1) :
 			return True
 		else :
 			return False

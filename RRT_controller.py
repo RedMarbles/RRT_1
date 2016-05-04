@@ -20,8 +20,8 @@ from RRT_map import Map
 
 
 class Planner:
-	""" Do stuff """
-	def __init__(self, initial_state=State(), final_state=State()):
+	""" Handles the entire simulation """
+	def __init__(self, initial_state=State(), final_state=State(), mapfile="Maps/Map1.bmp"):
 		"""Constructor
 		   initial_state : The root node of the tree
 		   final_state : Either the goal state, or else a list of goal states
@@ -30,7 +30,7 @@ class Planner:
 		self.plant = Plant()  # The simulation environment
 		self.tree = Tree(initial_state)  # Initialize the tree
 		self.goals = [final_state]       # The goal to aim for
-		self.map = Map()   # The obstacle map of the environment
+		self.map = Map(mapfile)   # The obstacle map of the environment
 		self.current_target = State()  # Dummy initialization to mark the next point to go towards
 
 
@@ -65,41 +65,101 @@ class Planner:
 
 
 
-	def grow(self, goal=None):
-		""" Grow the tree in the direction of the target state """
-		if (goal==None):
-			goal = self.current_target
+	def grow(self, goal_state=None):
+		""" Grow the tree in the direction of the target state
+			Returns whether the final goal state has been reached
+		"""
+		if (goal_state==None):
+			goal_state = self.current_target
 		
 		# Find closest node in tree
-		node_old = self.findClosestNode(goal)
+		node_old = self.findClosestNode(goal_state)
 
 		# Grow tree in the direction of the node, use generalized extend algorithm
-		self.extend(node_old, goal)
+		reached_final_goal = self.extend(node_old, goal_state)
+		return reached_final_goal
 
 
 
 	def extend(self, old_node_address, goal_state):
-		""" Abstract function to select the RRT extend algorithm
+		""" Extends tree in the direction of the selected goat state
+			Returns whether the goal state has been reached
+			The extend function, for a simple holonomic system
 		"""
-		extend_RRT_simple(old_node_address, goal_state)
-		#extend_RRT_connect(old_node_address, goal_state)
+		current_state = self.tree[old_node_address].state
+
+		dX = self.distance(goal_state, current_state)
+
+		# If distance is less than unit distance, return directly
+		if (dist<=self.model['dx_max']) :
+			new_state = goal_state
+		else:
+			#Normalizing the difference vector to get unit vector
+			#Also multiplying by dx_max to get RRT unit jump
+			x_new = dX.x / dist * dx_max + current_state.x
+			y_new = dX.y / dist * dx_max + current_state.y
+			new_state = State(x_new, y_new)
+
+			# Abort current iteration if we extend onto an obstacle
+			if(self.map.checkCollision(x_new, y_new)==True):
+				return False
+		self.tree.append(state=new_state, parent=old_node_address)
+		if(self.distance(goal_state, self.goals[0]) < 0.1) :
+			return True
+		else :
+			return False
+
+
+	def update(self, X=State(), U=ControlInput()):
+		"""Evaluate result of applying control on the state"""
+		print("Error - %s.update() function has not been implemented" % self.__class__)
+		pass
+
+
+	def calculate_control(self, old_state, goal_state):
+		""" Calculate the control needed to reach the new state """
+		print("Error - %s.calculate_control() function has not been implemented" % self.__class__)
+		pass
+
+
+	def distance(self, X1, X2):
+		"""Calculate simple eucledian distance between two states"""
+		dX = X2-X1
+		d = np.sqrt(dX.x*dX.x + dX.y*dX.y)
+		return d
 
 
 
-	def extend_RRT_simple(self, old_node_address, goal_state):
+
+class PlannerRRTSimple_d1(Planner):
+	""" Combines the simple one-node-at-a-time RRT algorithm with the first version of
+	    the distance function
+	"""
+
+	def __init__(self, initial_state=State(), final_state=State()):
+		Planner.__init__(self, initial_state, final_state)
+
+	def extend(self, old_node_address, goal_state):
+		"""Extends the specified node towards the new node by a single unit"""
 		old_node = self.tree[old_node_address]
 		old_state = old_node.state
 		control = self.calculate_control(old_state, goal_state)
 		new_state = self.update(old_state, control)
 		self.tree.append(state=new_state, control=control, parent=old_node_address)
 
-
-	def extend_RRT_connect(self, old_node_address, goal_state):
-		pass
-
+	def distance(self, X1, X2):
+		"""
+		Calculate distance between states using formula:
+		distance = \sqrt{(x_2-x_1)^2 + (y_2-y_1)^2} + 2*r_{min}*\phi \\
+		\phi = \mathrm{atan2} \left( \frac{y_2-y_1}{x_2-x_1} \right)
+		"""
+		dX = X2-X1
+		phi = np.arctan2(dX.y,dX.x)
+		d = np.sqrt(dX.x*dX.x + dX.y*dX.y) + 2*self.min_turn_radius*np.abs(phi - X1.theta)
+		return d
 
 	def update(self, X=State(), U=ControlInput()):
-		"""Apply control on the state"""
+		"""Evaluate result of applying control on the state"""
 		U = U.saturate(self.model)
 		(v,w) = (U.v,U.w)
 
@@ -125,44 +185,15 @@ class Planner:
 		return ControlInput(v,omega)
 
 
-	def distance(self, X1, X2):
-		"""Return distance between two states
-		   This abstract function selects the distance metric we want to use 
+
+class PlannerRRTConnect_d1(PlannerRRTSimple_d1):
+	""" Combines RRT Connect algorithm with the first version of the distance algoritm """
+	def __init__(self, initial_state=State(), final_state=State()):
+		PlannerRRTSimple.__init__(self, initial_state, final_state)
+
+	def extend(self, old_node_address, goal_state):
+		"""Extend the specified node towards the new node continuously until 
+		   it reaches an obstacle or target
 		"""
-		return self.distance_euclidean(X1, X2)
+		pass
 
-	def distance_euclidean(self, X1, X2):
-		"""Calculate simple eucledian distance"""
-		dX = X2-X1
-		d = np.sqrt(dX.x*dX.x + dX.y*dX.y)
-		return d
-
-	def distance_geometric_sans_parking(self, X1, X2):
-		"""
-		Calculate distance between states using formula:
-		distance = \sqrt{(x_2-x_1)^2 + (y_2-y_1)^2} + 2*r_{min}*\phi \\
-		\phi = \mathrm{atan2} \left( \frac{y_2-y_1}{x_2-x_1} \right)
-		"""
-		dX = X2-X1
-		phi = np.arctan2(dX.y,dX.x)
-		d = np.sqrt(dX.x*dX.x + dX.y*dX.y) + 2*self.min_turn_radius*np.abs(phi - X1.theta)
-		return d
-
-	#TODO - Remove these functions later
-	def extend(self, X, X_rand):
-		"""Calculates next step from X to X_rand"""
-		return self.extend_simple(X, X_rand)
-
-	def extend_simple(self, X, X_rand):
-		"""The extend function, for a simple holonomic system"""
-		dX = X_rand - X
-		dist = dX.rho()
-
-		# If distance is less than unit distance, return directly
-		if (dist<=dx_max) : return State(X_rand.x, X_rand.y)
-
-		#Normalizing the difference vector to get unit vector
-		#Also multiplying by dx_max to get RRT unit jump
-		x_new = dX.x / dist * dx_max
-		y_new = dX.y / dist * dx_max
-		return State(x_new, y_new)

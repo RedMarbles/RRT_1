@@ -49,7 +49,7 @@ class Map:
 			return False
 
 
-	def drawTreeMap(self, states_tree, draw_params=None):
+	def drawTree(self, states_tree, draw_params=None, figure_number=1):
 		""" Accepts tree of states, and outputs the map with obstacles and the accepted states 
 		    states_tree : Tree object 
 		    draw_params : Dictionary that holds the parameters of the draw function"""
@@ -57,9 +57,19 @@ class Map:
 		params = Map.default_params.copy()
 		if(draw_params!=None):
 			params.update(draw_params)
-		##
 
-		#TODO : complete this function
+		plt.figure(figure_number)
+		
+		# Go backwards through the tree
+		for i in range( len(states_tree)-1, -1, -1 ) :
+			start = states_tree[i].state
+			end = states_tree[ states_tree[i].parent ].state
+			plt.plot([start.x, end.x],[start.y, end.y],color=params['path_color'])
+
+		plt.axis([ self.map_limits['xmin'], self.map_limits['xmax'], self.map_limits['ymin'], self.map_limits['ymax'] ])
+		#plt.show()
+		return
+
 
 	def loadBitmap(self, filename="Maps/Map1.bmp"):
 		""" Loads a RGB bitmap to use as a map. Only the first channel is looked at.
@@ -138,9 +148,10 @@ class Map:
 		""" Draw only a specified list of states in order, to mark a specific path """
 		pass #TODO : complete this function
 
-	def drawMap(self, draw_params=None):
+	def drawMap(self, draw_params=None, figure_number=1):
 		""" Draw only the static map, and nothing else """
-		fig1 = plt.figure(1)
+
+		plt.figure(figure_number)
 
 		for row in range(self.map_height):
 			for col in range(self.map_width):
@@ -152,4 +163,8 @@ class Map:
 		
 		plt.axis([ self.map_limits['xmin'], self.map_limits['xmax'], self.map_limits['ymin'], self.map_limits['ymax'] ])
 		#plt.show()
-		return fig1
+		return
+
+	def show(self):
+		plt.show()
+

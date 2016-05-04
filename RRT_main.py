@@ -12,15 +12,17 @@ if __name__ == "__main__":
 
 	
 	# Start loop
-	for i in range(200)
+	for i in range(200):
 
 		# Sample random point
 		X_random = planner.selectNextTarget()
 
 		# Grow tree in new direction
-		planner.grow(X_random)
+		reached_goal = planner.grow(X_random)
 
-		#TODO - Check if goal has been reached
-			#TODO - Plot route to goal and exit
+		if(reached_goal):
+			break
 
-	#TODO - Plot entire tree
+	planner.map.drawMap()
+	planner.map.drawTree(states_tree=planner.tree)
+	planner.map.show()

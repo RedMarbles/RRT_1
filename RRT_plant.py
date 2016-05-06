@@ -144,3 +144,14 @@ class Tree:
 	def __len__(self):
 		return len(self.data)
 
+	def getPathOfStates(self, node_address):
+		""" Returns the path from the specified node to the start 
+		    Return value is a list of nodes
+		"""
+		path = []
+		next_node = node_address
+		while (next_node>=0) :
+			path.append(self.data[next_node].state)
+			next_node = self.data[next_node].parent
+		return path
+

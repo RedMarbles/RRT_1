@@ -43,6 +43,14 @@ class Map:
 		#Convert real location to matrix location
 		row = int( np.round(y/self.res_y) )
 		col = int( np.round(x/self.res_x) )
+
+		#Check bounds of requested points
+		if ( (row<0) or (row>=len(self.map_grid)) ):
+			return False
+		if ( (col<0) or (col>=len(self.map_grid[0])) ):
+			return False
+
+		#Check value of map at point
 		if (self.map_grid[row][col] == 0):
 			return True
 		else:
@@ -64,7 +72,12 @@ class Map:
 		for i in range( len(states_tree)-1, 0, -1 ) :
 			start = states_tree[i].state
 			end = states_tree[ states_tree[i].parent ].state
-			plt.plot([start.x, end.x],[start.y, end.y],color=params['path_color'])
+			if ( np.abs(states_tree[i].control.omega) >= 4 ):
+				path_color = 'magenta'
+			else:
+				path_color = 'blue'
+			#plt.plot([start.x, end.x],[start.y, end.y],color=params['path_color'])
+			plt.plot([start.x, end.x],[start.y, end.y],color=path_color)
 
 		plt.axis([ self.map_limits['xmin'], self.map_limits['xmax'], self.map_limits['ymin'], self.map_limits['ymax'] ])
 		#plt.show()
@@ -144,9 +157,26 @@ class Map:
 
 
 
-	def drawStatesMap(self, states_list, draw_params=None):
-		""" Draw only a specified list of states in order, to mark a specific path """
-		pass #TODO : complete this function
+	def drawPath(self, states_list, draw_params=None, figure_number=1):
+		""" Draw only a specified list of states in order, to mark a specific path
+		    states_list : List object 
+		    draw_params : Dictionary that holds the parameters of the draw function"""
+		# Merge the default parameters with the argument
+		params = Map.default_params.copy()
+		if(draw_params!=None):
+			params.update(draw_params)
+
+		plt.figure(figure_number)
+		
+		# Loop through list of states
+		for i in range( len(states_list)-1 ) :
+			start = states_list[i]
+			end = states_list[ i+1 ]
+			plt.plot([start.x, end.x],[start.y, end.y],color=params['path_color'])
+
+		plt.axis([ self.map_limits['xmin'], self.map_limits['xmax'], self.map_limits['ymin'], self.map_limits['ymax'] ])
+		#plt.show()
+		return
 
 	def drawMap(self, draw_params=None, figure_number=1):
 		""" Draw only the static map, and nothing else """
@@ -154,9 +184,12 @@ class Map:
 		plt.figure(figure_number)
 
 		for row in range(self.map_height):
+			print("Plotting line %d of %d" % (row, self.map_height))
 			for col in range(self.map_width):
 				pix = self.map_grid[row][col]
 				color = 'white' if (pix==1) else 'black'
+				if(color=='white') :
+					continue
 				x_list = [ self.res_x*col, self.res_x*(col+1), self.res_x*(col+1), self.res_x*col ]
 				y_list = [ self.res_y*row, self.res_y*row, self.res_y*(row+1), self.res_y*(row+1) ]
 				plt.fill(x_list, y_list, color=color)

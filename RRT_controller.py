@@ -103,7 +103,7 @@ class Planner:
 			if(self.map.checkCollision(x_new, y_new)==True):
 				return False
 		self.tree.append(state=new_state, parent=old_node_address, control=ControlInput())
-		if(self.distance(new_state, self.goals[0]) < 0.1) :
+		if(self.distance(new_state, self.goals[0]) < self.model['dx_max']) :
 			return True
 		else :
 			return False
@@ -135,8 +135,8 @@ class PlannerRRTSimple_d1(Planner):
 	    the distance function
 	"""
 
-	def __init__(self, initial_state=State(), final_state=State()):
-		Planner.__init__(self, initial_state, final_state)
+	def __init__(self, initial_state=State(), final_state=State(), mapfile="Maps/Map1.bmp"):
+		Planner.__init__(self, initial_state, final_state, mapfile)
 
 	def extend(self, old_node_address, goal_state):
 		"""Extends the specified node towards the new node by a single unit"""
@@ -144,7 +144,14 @@ class PlannerRRTSimple_d1(Planner):
 		old_state = old_node.state
 		control = self.calculate_control(old_state, goal_state)
 		new_state = self.update(old_state, control)
+
+		# Abort current iteration if we extend onto an obstacle
+		if(self.map.checkCollision(new_state.x, new_state.y)==True):
+			return False
+
 		self.tree.append(state=new_state, control=control, parent=old_node_address)
+		if(self.distance(new_state, self.goals[0]) < self.model['dx_max']):
+			return True
 
 	def distance(self, X1, X2):
 		"""
@@ -154,33 +161,35 @@ class PlannerRRTSimple_d1(Planner):
 		"""
 		dX = X2-X1
 		phi = np.arctan2(dX.y,dX.x)
-		d = np.sqrt(dX.x*dX.x + dX.y*dX.y) + 2*self.min_turn_radius*np.abs(phi - X1.theta)
+		d = np.sqrt(dX.x*dX.x + dX.y*dX.y) + 2*self.model['min_turn_radius']*np.abs(phi - X1.theta)
 		return d
 
 	def update(self, X=State(), U=ControlInput()):
 		"""Evaluate result of applying control on the state"""
 		U = U.saturate(self.model)
-		(v,w) = (U.v,U.w)
+		(v,w) = (U.v,U.omega)
+		dt = self.model['dt']
 
-		d_theta = w * self.dt
-		x_new = X.x + v*np.cos(X.theta + d_theta/2)*self.dt
-		y_new = X.y + v*np.sin(X.theta + d_theta/2)*self.dt
+		d_theta = w * dt
+		x_new = X.x + v*np.cos(X.theta + d_theta/2)*dt
+		y_new = X.y + v*np.sin(X.theta + d_theta/2)*dt
 		theta_new = X.theta + d_theta
-		return State(x_new, y_new, theta_new, X.time+self.dt)
+		return State(x_new, y_new, theta_new, X.time+dt)
 
 	def calculate_control(self, old_state, goal_state):
 		""" Calculate the control needed to reach the new state """
-		dist = distance(old_state, goal_state)
-		dX = X2 - X1
+		dist = self.distance(old_state, goal_state)
+		dX = goal_state - old_state
 		phi = np.arctan2(dX.y, dX.x)
 		dtheta = phi - old_state.theta
 		ratio = self.model['dx_max']/dist
 		deltax = dX.x * ratio
-		deltay = dY.y * ratio
-		deltatheta = dtheta * ratio
+		deltay = dX.y * ratio
+		deltatheta = dtheta
 
 		omega = deltatheta / self.model['dt']
-		v = deltax / deltay * np.tan(old_state.theta + deltatheta/2) / self.model['dt']
+		#v = deltax / deltay * np.tan(old_state.theta + deltatheta/2) / self.model['dt']
+		v = np.sqrt( (deltax**2 + deltay**2) / self.model['dt']**2)
 		return ControlInput(v,omega)
 
 

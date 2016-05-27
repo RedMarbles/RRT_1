@@ -73,7 +73,7 @@ class Map:
 			start = states_tree[i].state
 			end = states_tree[ states_tree[i].parent ].state
 			if ( np.abs(states_tree[i].control.omega) >= 4 ):
-				path_color = 'magenta'
+				path_color = 'blue' #magenta'
 			else:
 				path_color = 'blue'
 			#plt.plot([start.x, end.x],[start.y, end.y],color=params['path_color'])
@@ -195,6 +195,46 @@ class Map:
 				plt.fill(x_list, y_list, color=color)
 		
 		plt.axis([ self.map_limits['xmin'], self.map_limits['xmax'], self.map_limits['ymin'], self.map_limits['ymax'] ])
+		#plt.show()
+		return
+
+	def drawControls(self, controls_list, draw_params=None, figure_number=2):
+		""" Draws the plot of the controls """
+		# Merge the default parameters with the argument
+		params = Map.default_params.copy()
+		if(draw_params!=None):
+			params.update(draw_params)
+
+		plt.figure(figure_number)
+
+		v_list = []
+		w_list = []
+		l = len(controls_list)
+		for i in range(l):
+			U = controls_list[l-i-1]
+			v_list.append(U.v)
+			w_list.append(U.omega)
+
+		plt.subplot(2,1,1)
+		plt.plot(v_list)
+		plt.ylabel('Velocity (m/s)')
+		plt.axis([ 0, len(v_list), np.min(v_list)-1, np.max(v_list)+1])
+		plt.subplot(2,1,2)
+		plt.plot(w_list)
+		plt.ylabel('Rotational velocity (rad/s)')
+		plt.xlabel('Time instant')
+		plt.axis([ 0, len(w_list), np.min(w_list)-1, np.max(w_list)+1])
+
+		# Loop through list of states
+		# for i in range( len(controls_list)-1 ) :
+		# 	start = controls_list[i]
+		# 	end = controls_list[ i+1 ]
+		# 	plt.subplot(2,1,1)
+		# 	plt.plot([i, i+1],[start.v, end.v],color=params['path_color'])
+		# 	plt.subplot(2,1,2)
+		# 	plt.plot([i, i+1],[start.omega, end.omega],color=params['path_color'])
+
+		#plt.axis([ self.map_limits['xmin'], self.map_limits['xmax'], self.map_limits['ymin'], self.map_limits['ymax'] ])
 		#plt.show()
 		return
 

@@ -102,7 +102,10 @@ class Planner:
 			# Abort current iteration if we extend onto an obstacle
 			if(self.map.checkCollision(x_new, y_new)==True):
 				return False
-		self.tree.append(state=new_state, parent=old_node_address, control=ControlInput())
+
+		v = self.distance(new_state, current_state) / self.model['dt']
+		w = np.arctan2(new_state.y - current_state.y, new_state.x - current_state.x) / self.model['dt']
+		self.tree.append(state=new_state, parent=old_node_address, control=ControlInput(v,w))
 		if(self.distance(new_state, self.goals[0]) < self.model['dx_max']) :
 			return True
 		else :
@@ -149,7 +152,7 @@ class PlannerRRTSimple_d1(Planner):
 		if(self.map.checkCollision(new_state.x, new_state.y)==True):
 			return False
 
-		self.tree.append(state=new_state, control=control, parent=old_node_address)
+		self.tree.append(state=new_state, control=control.saturate(self.model), parent=old_node_address)
 		if(self.distance(new_state, self.goals[0]) < self.model['dx_max']):
 			return True
 

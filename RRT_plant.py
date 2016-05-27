@@ -155,3 +155,13 @@ class Tree:
 			next_node = self.data[next_node].parent
 		return path
 
+	def getPathOfControls(self, node_address):
+		""" Returns th history of controls to get to specified node from start
+		"""
+		path = []
+		next_node = node_address
+		while (next_node>=0) :
+			path.append(self.data[next_node].control)
+			next_node = self.data[next_node].parent
+		return path
+

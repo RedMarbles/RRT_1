@@ -11,7 +11,7 @@ if __name__ == "__main__":
 	#Xf = State(9,9,np.pi/2)
 	X0 = State(1,1,0)
 	Xf = State(3,28,np.pi/2)
-	#planner = Planner(initial_state=X0,final_state=Xf,mapfile="Maps/Map1.bmp")
+	#planner = Planner(initial_state=X0,final_state=Xf,mapfile="Maps/Map3.bmp")
 	planner = PlannerRRTSimple_d1(initial_state=X0,final_state=Xf,mapfile="Maps/Map3.bmp")
 
 	
@@ -39,6 +39,7 @@ if __name__ == "__main__":
 	if (reached_goal):
 		print("Successfully reached goal with tree of size %d" % len(planner.tree) )
 		planner.map.drawPath( planner.tree.getPathOfStates( len(planner.tree)-1 ), {'path_color':'red'})
+		planner.map.drawControls( planner.tree.getPathOfControls( len(planner.tree)-1 ) )
 	print("All processes complete. Close the figure to finish the program.")
 	planner.map.show()
 
